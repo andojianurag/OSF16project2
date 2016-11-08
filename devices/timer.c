@@ -37,6 +37,7 @@ timer_init (void)
 {
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
+  list_init (&waiting_list);
 }
 
 /* Calibrates loops_per_tick, used to implement brief delays. */
@@ -94,7 +95,6 @@ timer_sleep (int64_t ticks)
   enum intr_level old_level = intr_disable ();
   struct thread *t = thread_current();
   t->ticks = start + ticks;
-  list_remove (&t->elem);
   list_push_back (&waiting_list, &t->w_elem);
   thread_block ();
   intr_set_level (old_level);
@@ -177,15 +177,18 @@ timer_interrupt (struct intr_frame *args UNUSED)
   ticks++;
   thread_tick ();
   struct list_elem* i;
-  for(i = list_begin(&waiting_list); 
-    i != list_end(&waiting_list);
-    i = list_next(i))
+  i = list_begin(&waiting_list);
+  while(!i || i != list_end(&waiting_list))
   {
     struct thread* t = list_entry(i, struct thread, w_elem);
-    if(!t && t->ticks >= ticks)
+    if(ticks >= t->ticks)
     {
-      list_remove(&t->w_elem);
+      i = list_remove(&t->w_elem);
       thread_unblock(t);
+    }
+    else
+    {
+      i = list_next(i);
     } 
   }
 
