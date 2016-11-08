@@ -2,3 +2,10 @@ cscope.files
 cscope.out
 TAGS
 tags
+utils/pintos
+utils/Pintos.pm
+utils/pintos-gdb
+*.o
+*/*.o
+*.dsk
+examples/
