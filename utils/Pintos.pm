@@ -359,8 +359,8 @@ sub cyl_sectors {
 # Makes sure that the loader is a reasonable size.
 sub read_loader {
     my ($name) = @_;
-    ###--- Change the string in quotes below to your location of loader.bin---### 
-    $name = find_file ("/home/andojianurag/Documents/OS/OSF16project2/threads/build/loader.bin") if !defined $name;
+    ###--- Change the string in quotes below to your location of loader.bin---###
+    $name = find_file ("/home/justinkang/Documents/OSF16project2/threads/build/loader.bin") if !defined $name;
     die "Cannot find loader\n" if !defined $name;
 
     my ($handle);
