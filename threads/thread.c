@@ -218,6 +218,7 @@ thread_create (const char *name, int priority,
 
   /* Add to run queue. */
   thread_unblock (t);
+  check_for_yield();
 
   return tid;
 }
@@ -317,6 +318,17 @@ thread_exit (void)
   NOT_REACHED ();
 }
 
+void check_for_yield()
+{
+  struct thread* cur = thread_current();
+  struct list_elem *el = list_begin(&ready_list);
+  struct thread* t = list_entry(el, struct thread, elem);
+  if(cur->priority < t->priority)
+  {
+    thread_yield();
+  }
+}
+
 /* Yields the CPU.  The current thread is not put to sleep and
    may be scheduled again immediately at the scheduler's whim. */
 void
@@ -328,8 +340,12 @@ thread_yield (void)
   ASSERT (!intr_context ());
 
   old_level = intr_disable ();
-  if (cur != idle_thread) 
+  if (cur != idle_thread) {
     list_push_back (&ready_list, &cur->elem);
+    list_sort(&ready_list, 
+      (list_less_func *)&check_priority,
+      NULL);
+  }
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -357,6 +373,7 @@ void
 thread_set_priority (int new_priority) 
 {
   thread_current ()->priority = new_priority;
+  check_for_yield();
 }
 
 /* Returns the current thread's priority. */
