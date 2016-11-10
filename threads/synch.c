@@ -215,6 +215,7 @@ lock_acquire (struct lock *lock)
         struct thread* t = list_entry(i, struct thread, d_elem);
         if(t->stuck == lock){
           lock->holder->priority = t->priority;
+          lock->holder->donated = true;
           break;
         }
         i = list_next(i);
@@ -257,17 +258,6 @@ lock_release (struct lock *lock)
   ASSERT (lock != NULL);
   ASSERT (lock_held_by_current_thread (lock));
 
-  /*if(!list_empty(&lock->holder->donors)){
-    list_pop_front(&lock->holder->donors);
-  }
-  if(!list_empty(&lock->holder->donors)){
-    struct thread* t = list_entry(list_front(&lock->holder->donors), struct thread, d_elem);
-    lock->holder->priority = t->priority;
-  }
-  else{
-    lock->holder->priority = lock->holder->base_priority;
-  }*/
-
   if(!list_empty(&lock->holder->donors)){
     struct list_elem* i = list_begin(&lock->holder->donors);
     while(i != list_end(&lock->holder->donors)){
@@ -283,9 +273,11 @@ lock_release (struct lock *lock)
   if(!list_empty(&lock->holder->donors)){
     struct thread* t = list_entry(list_front(&lock->holder->donors), struct thread, d_elem);
     lock->holder->priority = t->priority;
+    lock->holder->donated = true;
   }
   else{
     lock->holder->priority = lock->holder->base_priority;
+    lock->holder->donated = false;
   }
   sort_ready_list();  
   lock->holder = NULL;

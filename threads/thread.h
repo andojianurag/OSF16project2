@@ -101,7 +101,7 @@ struct thread
     struct list_elem d_elem;
 
     struct lock* stuck;
-
+    bool donated;
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
