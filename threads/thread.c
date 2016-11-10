@@ -72,7 +72,8 @@ static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
 
-/* Returns true if 1st thread's priority > 2nd thread's priority */
+/* Returns true if 1st thread's priority > 2nd thread's priority
+   in list with ELEM as the ELEMENT!! */
 bool check_priority(const struct list_elem *elem1,
                     const struct list_elem *elem2,
                     void* aux UNUSED)
@@ -83,7 +84,8 @@ bool check_priority(const struct list_elem *elem1,
   return t1->priority > t2->priority;
 }
 
-/* Returns true if 1st thread's priority > 2nd thread's priority */
+/* Returns true if 1st thread's priority > 2nd thread's priority
+   in list with D_ELEM as the ELEMENT!! */
 bool check_donor_priority(const struct list_elem *elem1,
                     const struct list_elem *elem2,
                     void* aux UNUSED)
@@ -385,6 +387,7 @@ void
 thread_set_priority (int new_priority) 
 {
   thread_current ()->priority = new_priority;
+  thread_current ()->base_priority = new_priority;
   list_sort(&ready_list, 
     (list_less_func *)&check_priority,
     NULL);
