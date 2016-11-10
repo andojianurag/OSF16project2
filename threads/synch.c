@@ -185,6 +185,16 @@ lock_init (struct lock *lock)
   sema_init (&lock->semaphore, 1);
 }
 
+void nested_locks_boost(struct lock* lock){
+  if(lock && lock->holder && lock->holder->stuck){
+      if(lock->holder->stuck->holder->priority < lock->holder->priority){
+        lock->holder->stuck->holder->priority = lock->holder->priority;
+        lock->holder->stuck->holder->donated = true;
+      }
+      nested_locks_boost(lock->holder->stuck);
+  }
+}
+
 /* Acquires LOCK, sleeping until it becomes available if
    necessary.  The lock must not already be held by the current
    thread.
@@ -202,6 +212,7 @@ lock_acquire (struct lock *lock)
 
   if(lock->holder)
   {
+    /* Only insert into the list if the priority is higher */
     if(lock->holder->base_priority < thread_current()->priority){
       list_insert_ordered(&lock->holder->donors, 
             &thread_current()->d_elem, 
@@ -221,10 +232,20 @@ lock_acquire (struct lock *lock)
         i = list_next(i);
       } 
     }
+    /* Nested Case */
+    nested_locks_boost(lock);
+    // if(lock->holder->stuck){ // is the current lock holder stuck on a lock
+    //   //if so boost the priority of the current lock holder's stuck lock owner
+    //   if(lock->holder->stuck->holder->priority < lock->holder->priority){
+    //     lock->holder->stuck->holder->priority = lock->holder->priority;
+    //     lock->holder->stuck->holder->donated = true;
+    //   }
+    // }
   }
   sort_ready_list();
   sema_down (&lock->semaphore);
   lock->holder = thread_current();
+  thread_current()->stuck = NULL;
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
