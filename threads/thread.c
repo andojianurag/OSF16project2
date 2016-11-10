@@ -89,6 +89,12 @@ bool check_priority(const struct list_elem *elem1,
   }
 }
 
+void sort_ready_list(){
+    list_sort(&ready_list, 
+    (list_less_func *)&check_priority,
+    NULL);
+}
+
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
    general and it is possible in this case only because loader.S
@@ -200,7 +206,6 @@ thread_create (const char *name, int priority,
   /* Initialize thread. */
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
-  t->base_priority = t->priority;
 
   /* Stack frame for kernel_thread(). */
   kf = alloc_frame (t, sizeof *kf);
@@ -220,6 +225,7 @@ thread_create (const char *name, int priority,
   /* Add to run queue. */
   thread_unblock (t);
   check_for_yield();
+
 
   return tid;
 }
@@ -374,6 +380,9 @@ void
 thread_set_priority (int new_priority) 
 {
   thread_current ()->priority = new_priority;
+  list_sort(&ready_list, 
+    (list_less_func *)&check_priority,
+    NULL);
   check_for_yield();
 }
 
@@ -502,6 +511,8 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
+  t->base_priority = priority;
+  list_init(&t->donors);
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);

@@ -97,6 +97,11 @@ struct thread
     int base_priority;
     struct list waiting_on;
 
+    struct list donors;
+    struct list_elem d_elem;
+
+    struct lock* stuck;
+
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
@@ -117,6 +122,7 @@ bool check_priority(const struct list_elem *elem1,
 void priority_donation(void);
 void thread_init (void);
 void thread_start (void);
+void check_for_yield();
 
 void thread_tick (void);
 void thread_print_stats (void);
