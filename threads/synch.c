@@ -203,19 +203,25 @@ lock_acquire (struct lock *lock)
   if(lock->holder)
   {
     if(lock->holder->base_priority < thread_current()->priority){
-      list_insert_ordered(&lock->holder->donors, &thread_current()->d_elem, 
-            (list_less_func *)&check_priority,
+      list_insert_ordered(&lock->holder->donors, 
+            &thread_current()->d_elem, 
+            (list_less_func *)&check_donor_priority,
             NULL);
       thread_current()->stuck = lock;
     }
     if(!list_empty(&lock->holder->donors)){
-      struct thread* t = list_entry(list_front(&lock->holder->donors), struct thread, d_elem);
-        if(lock->holder->priority < t->priority){
+      struct list_elem* i = list_begin(&lock->holder->donors);
+      while(i != list_end(&lock->holder->donors)){
+        struct thread* t = list_entry(i, struct thread, d_elem);
+        if(t->stuck == lock){
           lock->holder->priority = t->priority;
+          break;
+        }
+        i = list_next(i);
       } 
     }
   }
-
+  sort_ready_list();
   sema_down (&lock->semaphore);
   lock->holder = thread_current();
 }
@@ -274,14 +280,14 @@ lock_release (struct lock *lock)
       }
     } 
   }
-  /*if(!list_empty(&lock->holder->donors)){
+  if(!list_empty(&lock->holder->donors)){
     struct thread* t = list_entry(list_front(&lock->holder->donors), struct thread, d_elem);
     lock->holder->priority = t->priority;
   }
   else{
     lock->holder->priority = lock->holder->base_priority;
-  }*/
-  thread_set_priority(lock->holder->base_priority);
+  }
+  sort_ready_list();  
   lock->holder = NULL;
   sema_up (&lock->semaphore);
 }

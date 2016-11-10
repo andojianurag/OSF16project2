@@ -112,11 +112,16 @@ struct thread
     unsigned magic;                     /* Detects stack overflow. */
   };
 
+void sort_ready_list();
+
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
 extern bool thread_mlfqs;
 bool check_priority(const struct list_elem *elem1,
+                    const struct list_elem *elem2,
+                    void* aux UNUSED);
+bool check_donor_priority(const struct list_elem *elem1,
                     const struct list_elem *elem2,
                     void* aux UNUSED);
 void priority_donation(void);

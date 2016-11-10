@@ -79,14 +79,19 @@ bool check_priority(const struct list_elem *elem1,
 {
   struct thread* t1 = list_entry(elem1, struct thread, elem);
   struct thread* t2 = list_entry(elem2, struct thread, elem);
-  if(t1->priority > t2->priority)
-  {
-    return true;
-  }
-  else
-  {
-    return false;
-  }
+
+  return t1->priority > t2->priority;
+}
+
+/* Returns true if 1st thread's priority > 2nd thread's priority */
+bool check_donor_priority(const struct list_elem *elem1,
+                    const struct list_elem *elem2,
+                    void* aux UNUSED)
+{
+  struct thread* t1 = list_entry(elem1, struct thread, d_elem);
+  struct thread* t2 = list_entry(elem2, struct thread, d_elem);
+
+  return t1->priority > t2->priority;
 }
 
 void sort_ready_list(){
