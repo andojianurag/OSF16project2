@@ -94,9 +94,9 @@ struct thread
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
     struct list_elem w_elem;
-    int old_priority;
+    int base_priority;
     struct list waiting_on;
-    struct list_elem wait_on_elem;
+
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
