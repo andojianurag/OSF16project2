@@ -115,6 +115,9 @@ sema_up (struct semaphore *sema)
 
   old_level = intr_disable ();
   if (!list_empty (&sema->waiters)) {
+    list_sort(&sema->waiters, 
+      (list_less_func *)&check_priority,
+      NULL);
     thread_unblock (list_entry (list_pop_front (&sema->waiters),
                                 struct thread, elem));
   }
@@ -212,7 +215,6 @@ lock_acquire (struct lock *lock)
 
   if(lock->holder)
   {
-    /* Only insert into the list if the priority is higher */
     if(lock->holder->base_priority < thread_current()->priority){
       list_insert_ordered(&lock->holder->donors, 
             &thread_current()->d_elem, 
@@ -232,15 +234,7 @@ lock_acquire (struct lock *lock)
         i = list_next(i);
       } 
     }
-    /* Nested Case */
     nested_locks_boost(lock);
-    // if(lock->holder->stuck){ // is the current lock holder stuck on a lock
-    //   //if so boost the priority of the current lock holder's stuck lock owner
-    //   if(lock->holder->stuck->holder->priority < lock->holder->priority){
-    //     lock->holder->stuck->holder->priority = lock->holder->priority;
-    //     lock->holder->stuck->holder->donated = true;
-    //   }
-    // }
   }
   sort_ready_list();
   sema_down (&lock->semaphore);
@@ -334,6 +328,29 @@ cond_init (struct condition *cond)
   list_init (&cond->waiters);
 }
 
+bool check_sema_waiter_priority(const struct list_elem *elem1,
+                    const struct list_elem *elem2,
+                    void* aux UNUSED)
+{
+  struct semaphore_elem* s1 = list_entry(elem1, struct semaphore_elem, elem);
+  struct semaphore_elem* s2 = list_entry(elem2, struct semaphore_elem, elem);
+  if(list_empty(&s1->semaphore.waiters))
+    return false;
+  if(list_empty(&s1->semaphore.waiters))
+    return true;
+  list_sort(&s1->semaphore.waiters, 
+    (list_less_func *)&check_priority,
+    NULL);
+  list_sort(&s2->semaphore.waiters, 
+    (list_less_func *)&check_priority,
+    NULL);
+  struct thread* t1 = list_entry(list_front(&s1->semaphore.waiters)
+    , struct thread, elem);
+  struct thread* t2 = list_entry(list_front(&s2->semaphore.waiters)
+    , struct thread, elem);
+  return t1->priority > t2->priority;
+}
+
 /* Atomically releases LOCK and waits for COND to be signaled by
    some other piece of code.  After COND is signaled, LOCK is
    reacquired before returning.  LOCK must be held before calling
@@ -366,7 +383,7 @@ cond_wait (struct condition *cond, struct lock *lock)
   
   sema_init (&waiter.semaphore, 0);
   list_insert_ordered(&cond->waiters, &waiter.elem,
-            (list_less_func *)&check_priority,
+            (list_less_func *)&check_sema_waiter_priority,
             NULL);
   lock_release (lock);
   sema_down (&waiter.semaphore);
